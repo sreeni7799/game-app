@@ -1,7 +1,11 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import wordsRouter from './routes/words.js';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -10,8 +14,13 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
-const MONGODB_URI = 'mongodb+srv://gabriel8891894549:PiggsRbd3gvu6XKp@cluster0.ln0ku.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0';
+// MongoDB connection using environment variable
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('MONGODB_URI environment variable is not set');
+  process.exit(1);
+}
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
