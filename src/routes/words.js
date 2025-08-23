@@ -9,7 +9,7 @@ router.get('/level/:level', async (req, res) => {
     const { level } = req.params;
     
     // Validate level
-    const validLevels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const validLevels = ['A1', 'A2', 'B1', 'B2'];
     if (!validLevels.includes(level)) {
       return res.status(400).json({ error: 'Invalid language level' });
     }
@@ -39,7 +39,7 @@ router.get('/levels', async (req, res) => {
   try {
     const levels = await Word.distinct('languageLevel');
     const sortedLevels = levels.sort((a, b) => {
-      const levelOrder = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+      const levelOrder = ['A1', 'A2', 'B1', 'B2'];
       return levelOrder.indexOf(a) - levelOrder.indexOf(b);
     });
     

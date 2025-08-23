@@ -45,7 +45,22 @@ const Card = ({ word, image, pairId, isRevealed, isMatched, onCardFlip, disabled
       <div className="absolute inset-0 w-full h-full rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex flex-col items-center justify-center p-2">
         {isRevealed ? (
           <>
-            <div className="text-2xl mb-1">{image}</div>
+            <div className="mb-1 flex items-center justify-center h-12">
+              {image && image.startsWith('http') ? (
+                <img 
+                  src={image} 
+                  alt={word}
+                  className="max-w-full max-h-full object-contain rounded"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+              ) : (
+                <div className="text-2xl">{image || '📚'}</div>
+              )}
+              <div className="text-2xl hidden">📚</div>
+            </div>
             <div className="text-white text-sm font-bold text-center break-words">
               {word}
             </div>
