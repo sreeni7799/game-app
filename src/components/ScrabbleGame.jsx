@@ -269,18 +269,18 @@ const ScrabbleGame = ({
     });
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-gray-900 dark:to-gray-700 flex flex-col items-center p-4">
-            <button onClick={onBack} className="mb-3 bg-gray-600 text-white px-4 py-2 rounded-lg shadow">
+        <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-gray-900 dark:to-gray-700 flex flex-col items-center p-2 sm:p-4">
+            <button onClick={onBack} className="mb-2 sm:mb-3 bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow text-sm sm:text-base">
                 Back to Level Select
             </button>
             <div className="max-w-5xl w-full">
                 <div className="flex flex-col items-center justify-center mt-2">
-                    <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Scrabble Game &ndash; Level {selectedLevel}</h2>
-                    <div className="mb-3 flex items-center justify-between gap-12 w-full max-w-lg">
-                        <span className="text-xl bg-white px-4 py-1 rounded-lg shadow border border-blue-200">
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900 dark:text-white text-center">Scrabble Game &ndash; Level {selectedLevel}</h2>
+                    <div className="mb-3 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-12 w-full max-w-lg">
+                        <span className="text-lg sm:text-xl bg-white px-2 sm:px-4 py-1 rounded-lg shadow border border-blue-200">
                             <b>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</b> minutes left
                         </span>
-                        <span className="ml-4 text-xl bg-white px-4 py-1 rounded-lg shadow border border-green-200">
+                        <span className="ml-0 sm:ml-4 text-lg sm:text-xl bg-white px-2 sm:px-4 py-1 rounded-lg shadow border border-green-200">
                             Words found: <b>{foundWords.size} / {Math.min(5, placedWords.length)}</b>
                         </span>
                     </div>
@@ -294,14 +294,12 @@ const ScrabbleGame = ({
                         onQuit={onBack}
                     />
                 )}
-                <div className="flex flex-col md:flex-row items-start justify-center gap-12 mt-2 w-full">
-                    <div
-                        className="bg-white p-6 rounded-xl shadow-xl"
-                    >
+                <div className="flex flex-col md:flex-row items-start justify-center gap-4 sm:gap-12 mt-2 w-full">
+                    <div className="bg-white p-2 sm:p-6 rounded-xl shadow-xl w-full md:w-auto overflow-x-auto">
                         <div
-                            className="grid gap-2"
+                            className="grid gap-1 sm:gap-2"
                             style={{
-                                gridTemplateColumns: `repeat(${gridSize}, 3rem)`
+                                gridTemplateColumns: `repeat(${gridSize}, minmax(2.2rem, 3rem))`
                             }}
                         >
                             {grid.map((rowArr, row) => rowArr.map((letter, col) => {
@@ -319,32 +317,32 @@ const ScrabbleGame = ({
                                 );
                             }))}
                         </div>
-                        <div className="mt-4 flex items-center">
+                        <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row items-center">
                             <input
                                 type="text"
                                 readOnly
                                 value={selectedWord}
-                                className="w-44 text-center font-mono p-2 rounded-lg bg-gray-50 border shadow"
+                                className="w-32 sm:w-44 text-center font-mono p-2 rounded-lg bg-gray-50 border shadow mb-2 sm:mb-0"
                                 placeholder="Select tiles"
                             />
                             <button
                                 onClick={handleSubmit}
-                                className="ml-3 bg-green-600 text-white px-3 py-2 rounded-lg shadow"
+                                className="sm:ml-3 bg-green-600 text-white px-2 sm:px-3 py-2 rounded-lg shadow text-sm sm:text-base"
                                 disabled={!validSelection || gameOver}
                             >Submit Word</button>
                             <button
                                 onClick={() => setSelectedCells([])}
-                                className="ml-2 bg-red-600 text-white px-3 py-2 rounded-lg shadow"
+                                className="sm:ml-2 bg-red-600 text-white px-2 sm:px-3 py-2 rounded-lg shadow text-sm sm:text-base"
                                 disabled={selectedCells.length === 0 || gameOver}
                             >Clear</button>
                         </div>
-                        {message && <div className="mt-2 p-2 text-blue-800">{message}</div>}
+                        {message && <div className="mt-2 p-2 text-blue-800 text-sm">{message}</div>}
                     </div>
-                    <div className="min-w-[240px] w-full md:max-w-xs bg-white p-4 rounded-xl shadow-xl">
-                        <h4 className="font-bold mb-2 text-xl text-gray-900 dark:text-white">Words to Find</h4>
+                    <div className="min-w-[180px] sm:min-w-[240px] w-full md:max-w-xs bg-white p-2 sm:p-4 rounded-xl shadow-xl">
+                        <h4 className="font-bold mb-2 text-lg sm:text-xl text-gray-900 dark:text-white">Words to Find</h4>
                         <WordsToFindList placedWords={placedWords} foundWords={foundWords} />
-                        <div className="mt-2 text-sm text-gray-500">
-                            Hover each word for an image clue. Select contiguous tiles, then Submit.
+                        <div className="mt-2 text-xs sm:text-sm text-gray-500">
+                            Tap each word for an image clue. Select contiguous tiles, then Submit.
                         </div>
                     </div>
                 </div>
