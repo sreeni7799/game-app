@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ScrabbleGame from './ScrabbleGame'; // This component implements your NxN crossword/adjacency logic
-import LanguageLevelSelector from './LanguageLevelSelector';
-import { fetchWordsByLevel } from '../services/api';
+import LanguageLevelSelector from '../LanguageLevelSelector';
+import { fetchWordsByLevel } from '../../services/api';
 
 const GRID_SIZE = 8; // Change to desired NxN size, e.g. 10 for 10x10 grid
 

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import AnagramGame from './AnagramGame';
-import LanguageLevelSelector from './LanguageLevelSelector';
-import { fetchWordsByLevel } from '../services/api';
-import GameOverScreen from './ScrabbleGame'; // Import Scrabble's GameOverScreen
+import LanguageLevelSelector from '../LanguageLevelSelector';
+import { fetchWordsByLevel } from '../../services/api';
+import GameOverScreen from '../ScrabbleGame/ScrabbleGame'; // Import Scrabble's GameOverScreen
 
 const AnagramGameContainer = () => {
   const [selectedLevel, setSelectedLevel] = useState(null);

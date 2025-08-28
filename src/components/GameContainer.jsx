@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import GameSelector from './GameSelector';
-import MemoryGameContainer from './MemoryGameContainer';
-import ScrabbleGameContainer from './ScrabbleGameContainer'; // Make sure this is imported
-import AnagramGameContainer from './AnagramContainer';
+import MemoryGameContainer from './MemoryGame/MemoryGameContainer';
+import ScrabbleGameContainer from './ScrabbleGame/ScrabbleGameContainer'; // Make sure this is imported
+import AnagramGameContainer from './Anagrams/AnagramContainer';
 
 const GameContainer = () => {
     const [selectedGame, setSelectedGame] = useState(null);
