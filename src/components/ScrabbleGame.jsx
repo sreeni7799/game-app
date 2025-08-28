@@ -11,7 +11,7 @@ function createScrabbleGrid(words, gridSize = 8) {
     { name: 'diagonal', dr: 1, dc: 1 }
   ];
 
-  words.forEach(({ german, english, image }) => {
+  words.forEach(({ german, english, image = null }) => {
     const word = german.toUpperCase();
     let placed = false;
     for (let tries = 0; tries < 100 && !placed; tries++) {
