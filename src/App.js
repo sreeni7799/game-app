@@ -1,6 +1,6 @@
 import './App.css';
 import GameContainer from './components/GameContainer';
-import MemoryGameContainer from './components/MemoryGameContainer';
+import MemoryGameContainer from './components/MemoryGame/MemoryGameContainer';
 
 function App() {
   return (

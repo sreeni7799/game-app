@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import MemoryGame from './MemoryGame';
-import LanguageLevelSelector from './LanguageLevelSelector';
-import { fetchWordsByLevel } from '../services/api';
+import LanguageLevelSelector from '../LanguageLevelSelector';
+import { fetchWordsByLevel } from '../../services/api';
 
 const MemoryGameContainer = () => {
   const [selectedLevel, setSelectedLevel] = useState(null);
