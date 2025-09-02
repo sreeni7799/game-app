@@ -3,6 +3,7 @@ import GameSelector from './GameSelector';
 import MemoryGameContainer from './MemoryGame/MemoryGameContainer';
 import ScrabbleGameContainer from './ScrabbleGame/ScrabbleGameContainer'; // Make sure this is imported
 import AnagramGameContainer from './Anagrams/AnagramContainer';
+import AccommodationSwipeGame from './FindingAccomodationGame/AccomodationSwipeGame';
 
 const GameContainer = () => {
     const [selectedGame, setSelectedGame] = useState(null);
@@ -64,6 +65,12 @@ const GameContainer = () => {
                         onBackToGameSelection={handleBackToGameSelection}
                     />
                 );
+            case 'accomodation':
+                return (
+                    <AccommodationSwipeGame
+                        onBackToGameSelection={handleBackToGameSelection}
+                    />
+                )
             default:
                 return <GameSelector onGameSelect={handleGameSelect} />;
         }

@@ -5,7 +5,8 @@ const GAMES = [
   { id: 'scrabble', name: 'Scrabble', emoji: '🔠', description: 'Form words from a set of letters for points' },
   { id: 'quiz', name: 'Quiz', emoji: '❓', description: 'Test your vocabulary with multiple-choice questions' },
   { id: 'taboo', name: 'Taboo', emoji: '🚫', description: 'Describe a word without using forbidden terms' },
-  { id: 'anagrams', name: 'Anagrams', emoji: '🔤', description: 'Unscramble the letters to find the correct word' }
+  { id: 'anagrams', name: 'Anagrams', emoji: '🔤', description: 'Unscramble the letters to find the correct word' },
+  { id: 'accommodation', name: 'Find Accommodation', emoji: '🏠', description: 'Help Alex find safe housing' }
 ];
 
 const GAME_COLORS = {
