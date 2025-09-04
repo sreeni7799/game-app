@@ -3,8 +3,10 @@ import GameSelector from './GameSelector';
 import MemoryGameContainer from './MemoryGame/MemoryGameContainer';
 import ScrabbleGameContainer from './ScrabbleGame/ScrabbleGameContainer'; // Make sure this is imported
 import AnagramGameContainer from './Anagrams/AnagramContainer';
-import AccommodationSwipeGame from './FindingAccomodationGame/AccomodationSwipeGame';
-
+import AccommodationSwipeGame from './FindingAccomodationGame/AccommodationSwipeGame';
+import QuizGameContainer from './QuizGame/QuizGameContainer';
+import TabooGameContainer from './TabooGame/TabooGameContainer';
+import AccommodationSwipeGameContainer from './FindingAccomodationGame/AccommodationSwipeGameContainer';
 const GameContainer = () => {
     const [selectedGame, setSelectedGame] = useState(null);
 
@@ -33,31 +35,34 @@ const GameContainer = () => {
                 );
             case 'quiz':
                 return (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                        <div className="text-center">
-                            <h2 className="text-3xl font-bold mb-4">Quiz Coming Soon!</h2>
-                            <button
-                                onClick={handleBackToGameSelection}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
-                            >
-                                Back to Game Selection
-                            </button>
-                        </div>
-                    </div>
+                    // <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                    //     <div className="text-center">
+                    //         <h2 className="text-3xl font-bold mb-4">Quiz Coming Soon!</h2>
+                    //         <button
+                    //             onClick={handleBackToGameSelection}
+                    //             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+                    //         >
+                    //             Back to Game Selection
+                    //         </button>
+                    //     </div>
+                    // </div>
+                    <QuizGameContainer onBackToGameSelection={handleBackToGameSelection}
+                    />
                 );
             case 'taboo':
                 return (
-                    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                        <div className="text-center">
-                            <h2 className="text-3xl font-bold mb-4">Taboo Coming Soon!</h2>
-                            <button
-                                onClick={handleBackToGameSelection}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
-                            >
-                                Back to Game Selection
-                            </button>
-                        </div>
-                    </div>
+                    // <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                    //     <div className="text-center">
+                    //         <h2 className="text-3xl font-bold mb-4">Taboo Coming Soon!</h2>
+                    //         <button
+                    //             onClick={handleBackToGameSelection}
+                    //             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+                    //         >
+                    //             Back to Game Selection
+                    //         </button>
+                    //     </div>
+                    // </div>
+                    <TabooGameContainer onBackToGameSelection={handleBackToGameSelection}/>
                 );
             case 'anagrams':
                 return (
@@ -65,9 +70,9 @@ const GameContainer = () => {
                         onBackToGameSelection={handleBackToGameSelection}
                     />
                 );
-            case 'accomodation':
+            case 'accommodation':
                 return (
-                    <AccommodationSwipeGame
+                    <AccommodationSwipeGameContainer
                         onBackToGameSelection={handleBackToGameSelection}
                     />
                 )

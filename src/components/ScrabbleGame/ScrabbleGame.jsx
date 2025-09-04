@@ -1,354 +1,344 @@
 import React, { useState, useEffect } from 'react';
 
+const GRID_SIZE = 8;
+
 const GameOverScreen = ({ success, wordsFound, wordsTarget, onRestart, onQuit }) => {
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 text-center shadow-2xl max-w-sm w-full mx-4">
-                <h2 className={`text-3xl font-bold mb-4 ${success ? 'text-green-600' : 'text-red-600'}`}>
-                    {success ? '🎉 Congratulations!' : '😔 Game Over'}
-                </h2>
-                <p className="text-gray-700 mb-2">
-                    {success
-                        ? `You found ${wordsFound} out of ${wordsTarget} required words!`
-                        : 'Better luck next time!'}
-                </p>
-                <div className="space-y-3 mt-6">
-                    <button
-                        onClick={onRestart}
-                        className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors"
-                    >
-                        Play Again
-                    </button>
-                    <button
-                        onClick={onQuit}
-                        className="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors"
-                    >
-                        Back to Levels
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Utility: place words randomly (horizontal, vertical, diagonal)
-function createScrabbleGrid(words, gridSize = 8) {
-    const grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
-    const placedWords = [];
-
-    const directions = [
-        { name: 'horizontal', dr: 0, dc: 1 },
-        { name: 'vertical', dr: 1, dc: 0 },
-        { name: 'diagonal', dr: 1, dc: 1 }
-    ];
-
-    words.forEach(({ german, english, image }) => {
-        const word = german.toUpperCase();
-        let placed = false;
-        for (let tries = 0; tries < 100 && !placed; tries++) {
-            const dir = directions[Math.floor(Math.random() * directions.length)];
-            const maxRow = gridSize - (dir.dr ? word.length : 0);
-            const maxCol = gridSize - (dir.dc ? word.length : 0);
-            const row = Math.floor(Math.random() * maxRow);
-            const col = Math.floor(Math.random() * maxCol);
-
-            // Check fit (allow overlap if letters match)
-            let fits = true;
-            for (let k = 0; k < word.length; k++) {
-                const r = row + dir.dr * k;
-                const c = col + dir.dc * k;
-                if (grid[r][c] && grid[r][c] !== word[k]) {
-                    fits = false;
-                    break;
-                }
-            }
-            if (fits) {
-                for (let k = 0; k < word.length; k++) {
-                    const r = row + dir.dr * k;
-                    const c = col + dir.dc * k;
-                    grid[r][c] = word[k];
-                }
-                placedWords.push({
-                    word,
-                    english,
-                    image,
-                    start: [row, col],
-                    direction: dir,
-                    length: word.length
-                });
-                placed = true;
-            }
-        }
-    });
-
-    // Fill remaining cells
-    const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ";
-    for (let i = 0; i < gridSize; i++)
-        for (let j = 0; j < gridSize; j++)
-            if (!grid[i][j]) grid[i][j] = ALPHA[Math.floor(Math.random() * ALPHA.length)];
-
-    return { grid, placedWords };
-}
-
-// Cell styled similar to MemoryGame cards
-const ScrabbleCell = ({ letter, selectedIdx, foundIdx, cellIdx, onClick }) => (
-    <button
-        className={`
-      w-12 h-12 shadow-lg rounded-xl 
-      font-bold text-xl border-2 m-1 
-      transition-colors duration-100 select-none
-      ${foundIdx
-                ? 'bg-green-500 border-green-600 text-white'
-                : selectedIdx
-                    ? 'bg-blue-400 border-blue-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900 hover:bg-blue-50'
-            }
-    `}
-        onClick={onClick}
-        tabIndex={-1}
-    >
-        {letter}
-    </button>
-);
-
-function getSelectionDirection(selection) {
-    if (selection.length < 2) return null;
-    const dr = selection[1][0] - selection[0][0];
-    const dc = selection[1][1] - selection[0][1];
-    if (dr === 0 && dc !== 0) return { dr: 0, dc: Math.sign(dc) };
-    if (dc === 0 && dr !== 0) return { dr: Math.sign(dr), dc: 0 };
-    if (Math.abs(dr) === Math.abs(dc) && dr !== 0) return { dr: Math.sign(dr), dc: Math.sign(dc) };
-    return null;
-}
-function isSelectionContiguous(selection) {
-    if (selection.length < 2) return false;
-    const dir = getSelectionDirection(selection);
-    if (!dir) return false;
-    for (let i = 1; i < selection.length; i++) {
-        if (
-            selection[i][0] !== selection[i - 1][0] + dir.dr ||
-            selection[i][1] !== selection[i - 1][1] + dir.dc
-        ) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// Tooltip for image on hover
-const WordTooltip = ({ image }) =>
-    image ? (
-        <div className="absolute left-full ml-3 z-40 w-20 h-20 bg-white p-2 border rounded shadow-xl flex items-center justify-center">
-            <img src={image} alt="" className="max-w-full max-h-full rounded" />
-        </div>
-    ) : null;
-
-// Word list styled + image hover
-const WordsToFindList = ({ placedWords, foundWords }) => {
-  const [revealedIndex, setRevealedIndex] = useState(null);
-
   return (
-    <ul className="space-y-4">
-      {placedWords.map((word, i) => (
-        <li key={i}>
-          <div className="p-3 rounded-lg border-2 shadow-lg flex items-center justify-between">
-            <span className="text-lg font-bold">{word.english}</span>
-            <button onClick={() => setRevealedIndex(revealedIndex === i ? null : i)}>
-              {revealedIndex === i ? "Hide Image" : "Show Image"}
-            </button>
-          </div>
-          
-          {/* Use MemoryGame's exact image display approach */}
-          {revealedIndex === i && (
-            <div className="mt-4 p-4 bg-white border rounded-xl shadow-lg">
-              <div className="mb-1 flex items-center justify-center h-24">
-                {word.image && word.image.startsWith('http') ? (
-                  <img 
-                    src={word.image} 
-                    alt={word.english}
-                    className="max-w-full max-h-full object-contain rounded"
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                ) : (
-                  <div className="text-4xl">{word.image || '📚'}</div>
-                )}
-              </div>
-              <div className="text-center font-bold">{word.english}</div>
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div className="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md w-full">
+        <h2 className="text-3xl font-bold mb-4 text-green-600">🎉 Game Complete!</h2>
+        <div className="text-6xl mb-4">{success ? '🏆' : '📚'}</div>
+        <p className="text-xl mb-4">
+          {success
+            ? `You found ${wordsFound} out of ${wordsTarget} required words!`
+            : 'Better luck next time!'}
+        </p>
+        <div className="space-y-3">
+          <button
+            onClick={onRestart}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+          >
+            Play Again
+          </button>
+          <button
+            onClick={onQuit}
+            className="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+          >
+            Back to Levels
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
-const ScrabbleGame = ({
-    words,
-    gridSize = 8,
-    onTaskCompleted,
-    onRestart,
-    selectedLevel,
-    onBack
-}) => {
-    const [{ grid, placedWords }, setGameGrid] = useState({ grid: [], placedWords: [] });
-    const [selectedCells, setSelectedCells] = useState([]);
-    const [foundWords, setFoundWords] = useState(new Set());
-    const [message, setMessage] = useState('');
-    const [timeLeft, setTimeLeft] = useState(300);
-    const [gameOver, setGameOver] = useState(false);
+const ScrabbleGame = ({ words, level, onBack, onComplete }) => {
+  const [grid, setGrid] = useState([]);
+  const [foundWords, setFoundWords] = useState([]);
+  const [selectedCells, setSelectedCells] = useState([]);
+  const [currentWord, setCurrentWord] = useState('');
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const [gameCompleted, setGameCompleted] = useState(false);
+  const [score, setScore] = useState(0);
 
-    useEffect(() => {
-        setGameGrid(createScrabbleGrid(words, gridSize));
+  const targetWords = words ? words.map(w => w.german.toUpperCase()) : [];
+  const wordsTarget = Math.max(5, Math.floor(targetWords.length * 0.6));
+
+  // Timer effect
+  useEffect(() => {
+    if (timeLeft > 0 && !gameCompleted) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0) {
+      handleGameEnd();
+    }
+  }, [timeLeft, gameCompleted]);
+
+  // Initialize grid when words change
+  useEffect(() => {
+    if (words && words.length > 0) {
+      initializeGame();
+    }
+  }, [words]);
+
+  const initializeGame = () => {
+    try {
+      // Validate words data
+      const validWords = words.filter(word => 
+        word && word.german && typeof word.german === 'string'
+      ).slice(0, GRID_SIZE);
+
+      if (validWords.length > 0) {
+        const newGrid = createScrabbleGrid(validWords, GRID_SIZE);
+        setGrid(newGrid);
+        setFoundWords([]);
         setSelectedCells([]);
-        setFoundWords(new Set());
-        setMessage('');
-        setGameOver(false);
-        setTimeLeft(300);
-    }, [words, gridSize]);
+        setCurrentWord('');
+        setScore(0);
+        setGameCompleted(false);
+      }
+    } catch (error) {
+      console.error('Error initializing Scrabble game:', error);
+      // Set a default empty grid
+      setGrid(Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('')));
+    }
+  };
 
-    useEffect(() => {
-        if (!gameOver && timeLeft > 0) {
-            const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-            return () => clearTimeout(timer);
+  const createScrabbleGrid = (words, gridSize) => {
+    // Initialize grid with proper bounds
+    const grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(''));
+    
+    words.forEach((word, wordIndex) => {
+      const germanWord = word.german.toUpperCase();
+      
+      // Safe placement with bounds checking
+      for (let i = 0; i < germanWord.length && i < gridSize; i++) {
+        const row = Math.min(wordIndex, gridSize - 1);
+        const col = Math.min(i, gridSize - 1);
+        
+        // Only place if within bounds
+        if (row >= 0 && row < gridSize && col >= 0 && col < gridSize) {
+          grid[row][col] = germanWord[i];
         }
-        if (timeLeft === 0) setGameOver(true);
-    }, [gameOver, timeLeft]);
-
-    const handleCellClick = (row, col) => {
-        const cellIdx = selectedCells.findIndex(([r, c]) => r === row && c === col);
-        if (cellIdx >= 0) {
-            setSelectedCells(selectedCells.filter((_, i) => i !== cellIdx));
-        } else {
-            setSelectedCells([...selectedCells, [row, col]]);
-        }
-        setMessage('');
-    };
-
-    const orderedSelection = selectedCells.slice().sort((a, b) =>
-        a[0] !== b[0] ? a[0] - b[0]
-            : a[1] - b[1]
-    );
-    const validSelection =
-        orderedSelection.length > 1 && isSelectionContiguous(orderedSelection);
-
-    const selectedWord =
-        validSelection
-            ? orderedSelection.map(([r, c]) => grid[r][c]).join('')
-            : '';
-
-    const handleSubmit = () => {
-        if (!validSelection || !selectedWord) {
-            setMessage('Select contiguous cells in a line (row/column/diagonal).');
-            return;
-        }
-        const match = placedWords.find(pw =>
-            pw.word === selectedWord &&
-            !foundWords.has(pw.word)
-        );
-        if (match) {
-            setFoundWords(prev => new Set(prev).add(selectedWord));
-            setMessage(`Great! Found "${match.english}".`);
-            setSelectedCells([]);
-            if ((foundWords.size + 1) >= Math.min(5, placedWords.length)) {
-                setGameOver(true);
-                if (onTaskCompleted) onTaskCompleted(true);
-            }
-        } else {
-            setMessage('Not a valid word, check direction and try again.');
-            setSelectedCells([]);
-        }
-    };
-
-    const foundCellIdx = {};
-    placedWords.forEach(w => {
-        if (foundWords.has(w.word)) {
-            for (let k = 0; k < w.length; k++) {
-                foundCellIdx[`${w.start[0] + w.direction.dr * k}-${w.start[1] + w.direction.dc * k}`] = true;
-            }
-        }
+      }
     });
+    
+    // Fill empty cells with random letters
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (let row = 0; row < gridSize; row++) {
+      for (let col = 0; col < gridSize; col++) {
+        if (grid[row] && grid[row][col] === '') {
+          grid[row][col] = alphabet[Math.floor(Math.random() * alphabet.length)];
+        }
+      }
+    }
+    
+    return grid;
+  };
 
+  const handleCellClick = (row, col) => {
+    if (gameCompleted) return;
+
+    const cellKey = `${row}-${col}`;
+    const isSelected = selectedCells.some(cell => cell.key === cellKey);
+
+    if (isSelected) {
+      // Deselect cell
+      const newSelected = selectedCells.filter(cell => cell.key !== cellKey);
+      setSelectedCells(newSelected);
+      setCurrentWord(newSelected.map(cell => cell.letter).join(''));
+    } else {
+      // Select cell
+      const newSelected = [...selectedCells, { 
+        key: cellKey, 
+        row, 
+        col, 
+        letter: grid[row] ? grid[row][col] : '' 
+      }];
+      setSelectedCells(newSelected);
+      setCurrentWord(newSelected.map(cell => cell.letter).join(''));
+    }
+  };
+
+  const handleSubmitWord = () => {
+    const word = currentWord.toUpperCase();
+    
+    if (word.length < 3) {
+      alert('Word must be at least 3 letters long!');
+      return;
+    }
+
+    if (foundWords.includes(word)) {
+      alert('Word already found!');
+      return;
+    }
+
+    if (targetWords.includes(word)) {
+      setFoundWords([...foundWords, word]);
+      setScore(score + word.length);
+      setSelectedCells([]);
+      setCurrentWord('');
+
+      // Check if game should end
+      if (foundWords.length + 1 >= wordsTarget) {
+        handleGameEnd();
+      }
+    } else {
+      alert('Word not found in target list!');
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedCells([]);
+    setCurrentWord('');
+  };
+
+  const handleGameEnd = () => {
+    setGameCompleted(true);
+    const success = foundWords.length >= wordsTarget;
+    onComplete(success, foundWords.length, targetWords.length);
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  if (gameCompleted) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-gray-900 dark:to-gray-700 flex flex-col items-center p-2 sm:p-4">
-            <button onClick={onBack} className="mb-2 sm:mb-3 bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow text-sm sm:text-base">
-                Back to Level Select
-            </button>
-            <div className="max-w-5xl w-full">
-                <div className="flex flex-col items-center justify-center mt-2">
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900 dark:text-white text-center">Scrabble Game &ndash; Level {selectedLevel}</h2>
-                    <div className="mb-3 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-12 w-full max-w-lg">
-                        <span className="text-lg sm:text-xl bg-white px-2 sm:px-4 py-1 rounded-lg shadow border border-blue-200">
-                            <b>{Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</b> minutes left
-                        </span>
-                        <span className="ml-0 sm:ml-4 text-lg sm:text-xl bg-white px-2 sm:px-4 py-1 rounded-lg shadow border border-green-200">
-                            Words found: <b>{foundWords.size} / {Math.min(5, placedWords.length)}</b>
-                        </span>
-                    </div>
-                </div>
-                {gameOver && (
-                    <GameOverScreen
-                        success={foundWords.size >= Math.min(5, placedWords.length)}
-                        wordsFound={foundWords.size}
-                        wordsTarget={Math.min(5, placedWords.length)}
-                        onRestart={onRestart}
-                        onQuit={onBack}
-                    />
-                )}
-                <div className="flex flex-col md:flex-row items-start justify-center gap-4 sm:gap-12 mt-2 w-full">
-                    <div className="bg-white p-2 sm:p-6 rounded-xl shadow-xl w-full md:w-auto overflow-x-auto">
-                        <div
-                            className="grid gap-1 sm:gap-2"
-                            style={{
-                                gridTemplateColumns: `repeat(${gridSize}, minmax(2.2rem, 3rem))`
-                            }}
-                        >
-                            {grid.map((rowArr, row) => rowArr.map((letter, col) => {
-                                const isSelected = selectedCells.some(([r, c]) => r === row && c === col);
-                                const isFound = foundCellIdx[`${row}-${col}`];
-                                return (
-                                    <ScrabbleCell
-                                        key={`${row}-${col}`}
-                                        letter={letter}
-                                        cellIdx={[row, col]}
-                                        selectedIdx={isSelected}
-                                        foundIdx={isFound}
-                                        onClick={() => !gameOver && handleCellClick(row, col)}
-                                    />
-                                );
-                            }))}
-                        </div>
-                        <div className="mt-2 sm:mt-4 flex flex-col sm:flex-row items-center">
-                            <input
-                                type="text"
-                                readOnly
-                                value={selectedWord}
-                                className="w-32 sm:w-44 text-center font-mono p-2 rounded-lg bg-gray-50 border shadow mb-2 sm:mb-0"
-                                placeholder="Select tiles"
-                            />
-                            <button
-                                onClick={handleSubmit}
-                                className="sm:ml-3 bg-green-600 text-white px-2 sm:px-3 py-2 rounded-lg shadow text-sm sm:text-base"
-                                disabled={!validSelection || gameOver}
-                            >Submit Word</button>
-                            <button
-                                onClick={() => setSelectedCells([])}
-                                className="sm:ml-2 bg-red-600 text-white px-2 sm:px-3 py-2 rounded-lg shadow text-sm sm:text-base"
-                                disabled={selectedCells.length === 0 || gameOver}
-                            >Clear</button>
-                        </div>
-                        {message && <div className="mt-2 p-2 text-blue-800 text-sm">{message}</div>}
-                    </div>
-                    <div className="min-w-[180px] sm:min-w-[240px] w-full md:max-w-xs bg-white p-2 sm:p-4 rounded-xl shadow-xl">
-                        <h4 className="font-bold mb-2 text-lg sm:text-xl text-gray-900 dark:text-white">Words to Find</h4>
-                        <WordsToFindList placedWords={placedWords} foundWords={foundWords} />
-                        <div className="mt-2 text-xs sm:text-sm text-gray-500">
-                            Tap each word for an image clue. Select contiguous tiles, then Submit.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <GameOverScreen
+        success={foundWords.length >= wordsTarget}
+        wordsFound={foundWords.length}
+        wordsTarget={wordsTarget}
+        onRestart={initializeGame}
+        onQuit={onBack}
+      />
     );
+  }
+
+  if (!grid || grid.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⏳</div>
+          <div className="text-xl font-semibold text-gray-700">Loading game...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">
+              🔠 Scrabble Game - Level {level}
+            </h1>
+            <button
+              onClick={onBack}
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Back
+            </button>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <div className="text-lg">
+              Found: <span className="font-bold text-green-600">{foundWords.length}</span> / {wordsTarget}
+            </div>
+            <div className="text-lg">
+              Score: <span className="font-bold text-blue-600">{score}</span>
+            </div>
+            <div className={`text-lg font-mono ${timeLeft <= 60 ? 'text-red-600 font-bold' : 'text-gray-700'}`}>
+              ⏰ {formatTime(timeLeft)}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Game Grid */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-xl font-bold mb-4 text-center">Find the Words!</h2>
+              <div 
+                className="grid gap-1 mx-auto"
+                style={{ 
+                  gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+                  maxWidth: '400px'
+                }}
+              >
+                {grid.map((row, rowIndex) => 
+                  row && row.map((cell, colIndex) => {
+                    const cellKey = `${rowIndex}-${colIndex}`;
+                    const isSelected = selectedCells.some(c => c.key === cellKey);
+                    
+                    return (
+                      <button
+                        key={cellKey}
+                        onClick={() => handleCellClick(rowIndex, colIndex)}
+                        className={`
+                          w-12 h-12 border-2 font-bold text-lg transition-colors
+                          ${isSelected 
+                            ? 'bg-green-200 border-green-500 text-green-800' 
+                            : 'bg-gray-50 border-gray-300 hover:bg-gray-100'}
+                        `}
+                      >
+                        {cell}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Side Panel */}
+          <div className="space-y-6">
+            {/* Current Word */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-bold mb-4">Current Word</h3>
+              <div className="text-center">
+                <div className="text-2xl font-mono font-bold mb-4 p-3 bg-gray-100 rounded">
+                  {currentWord || '...'}
+                </div>
+                <div className="space-y-2">
+                  <button
+                    onClick={handleSubmitWord}
+                    disabled={currentWord.length < 3}
+                    className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-bold py-2 px-4 rounded transition-colors"
+                  >
+                    Submit Word
+                  </button>
+                  <button
+                    onClick={handleClearSelection}
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Target Words */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-lg font-bold mb-4">Target Words</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {targetWords.map((word, index) => (
+                  <div
+                    key={index}
+                    className={`p-2 rounded text-sm ${
+                      foundWords.includes(word)
+                        ? 'bg-green-100 text-green-800 line-through'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {word} ({words[index]?.english})
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Found Words */}
+            {foundWords.length > 0 && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-bold mb-4">Found Words</h3>
+                <div className="space-y-1">
+                  {foundWords.map((word, index) => (
+                    <div key={index} className="text-green-600 font-semibold">
+                      ✅ {word}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ScrabbleGame;
