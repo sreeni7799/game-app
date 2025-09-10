@@ -1,142 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AnagramGame from './AnagramGame';
-import LanguageLevelSelector from '../LanguageLevelSelector';
-import { fetchWordsByLevel } from '../../services/api';
+import { fetchWordsByLevelAndTopic } from '../../services/api';
 
-const AnagramGameContainer = ({ onBackToGameSelection }) => {
-  const [selectedLevel, setSelectedLevel] = useState(null);
+const AnagramGameContainer = ({ onBackToGameSelection, level, topic, scenario, gameData }) => {
   const [anagramWords, setAnagramWords] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
-  const [gameCompleted, setGameCompleted] = useState(false);
-  const [gameResult, setGameResult] = useState(null);
 
-  const fallbackWords = [
-    { germanWord: 'Haus', english: 'House', category: 'Accommodation', image: null },
-    { germanWord: 'Wohnung', english: 'Apartment', category: 'Accommodation', image: null },
-    { germanWord: 'Schule', english: 'School', category: 'Education', image: null },
-    { germanWord: 'Buch', english: 'Book', category: 'Education', image: null },
-    { germanWord: 'Auto', english: 'Car', category: 'Transport', image: null },
-    { germanWord: 'Zug', english: 'Train', category: 'Transport', image: null },
-    { germanWord: 'Wasser', english: 'Water', category: 'Health', image: null },
-    { germanWord: 'Arzt', english: 'Doctor', category: 'Health', image: null }
-  ];
+  // Automatically load anagram words when component mounts
+  useEffect(() => {
+    if (level && topic) {
+      loadAnagramWords();
+    }
+  }, [level, topic]);
 
-  const handleLevelSelect = async (level) => {
+  const loadAnagramWords = async () => {
     try {
       setLoading(true);
       setError(null);
-      setSelectedLevel(level);
       
-      console.log(`Loading words for anagram game - level: ${level}`);
-      const data = await fetchWordsByLevel(level);
+      console.log(`Loading anagram words for level: ${level} and topic: ${topic}`);
+      const data = await fetchWordsByLevelAndTopic(level, topic);
       
-      if (!data) {
-        throw new Error(`No data received for level ${level}`);
+      if (!data.pairs || data.pairs.length === 0) {
+        throw new Error(`No words found for level ${level} and topic ${topic}`);
       }
 
-      // Support both array and object with pairs (consistent with other games)
-      let wordsArray = [];
-      
-      if (Array.isArray(data)) {
-        wordsArray = data;
-      } else if (Array.isArray(data.pairs)) {
-        wordsArray = data.pairs;
-      } else {
-        throw new Error(`Invalid data format for level ${level}`);
-      }
-
-      if (!wordsArray || wordsArray.length === 0) {
-        throw new Error(`No words found for level ${level}`);
-      }
-
-      // Format words for anagram game (consistent with your existing pattern)
-      const formattedWords = wordsArray
+      // Format words for anagram game - remove articles from German words
+      const formattedWords = data.pairs
         .filter(word => {
-          const germanWord = word.germanWordSingular || word.german || word.de;
-          const englishWord = word.englishTranslation || word.english || word.en;
+          const germanWord = word.de;
+          const englishWord = word.en;
           return germanWord && englishWord;
         })
-        .slice(0, 8) // Limit to 8 words like the original design
         .map(word => ({
-          germanWord: (word.germanWordSingular || word.german || word.de || '').replace(/^(der|die|das)\s+/i, ''),
-          english: word.englishTranslation || word.english || word.en || '',
-          category: word.category || 'General',
+          germanWord: word.de.replace(/^(der|die|das)\s+/i, ''),
+          english: word.en,
+          category: 'General',
           image: word.image || null
         }));
 
-      console.log('Formatted anagram words:', formattedWords);
-
-      if (formattedWords.length === 0) {
-        console.warn('No formatted words available, using fallback');
-        setAnagramWords(fallbackWords.slice(0, 8));
-      } else {
-        setAnagramWords(formattedWords);
-      }
+      // Limit based on game settings or default to 8 words
+      const maxWords = gameData?.maxWords ? Math.min(gameData.maxWords, 10) : 8;
+      const minWords = gameData?.minWords ? Math.max(gameData.minWords, 4) : 4;
+      const wordCount = Math.min(Math.max(formattedWords.length, minWords), maxWords);
       
+      const limitedWords = formattedWords.slice(0, wordCount);
+      setAnagramWords(limitedWords);
       setGameStarted(true);
       
     } catch (err) {
-      console.error('Error loading words:', err);
-      setError(`Failed to load words: ${err.message}`);
-      
-      // Use fallback words on error as a last resort
-      console.log('Using fallback words due to error');
-      setAnagramWords(fallbackWords.slice(0, 8));
-      setGameStarted(true);
-      
+      console.error('Error loading anagram words:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGameComplete = (success, completedWords, totalWords) => {
-    setGameCompleted(true);
-    setGameResult({
-      success,
-      completedWords,
-      totalWords,
-      score: completedWords * (success ? 3 : 2)
-    });
+  const handleTaskCompleted = (success, completedWords, totalWords) => {
+    console.log(`Anagram game completed for scenario "${scenario.name}" at level ${level}:`, success ? 'Passed' : 'Failed');
+    console.log(`Completed: ${completedWords}/${totalWords} words`);
   };
 
   const handleRestart = () => {
-    setGameCompleted(false);
-    setGameResult(null);
-    if (selectedLevel) {
-      handleLevelSelect(selectedLevel);
+    loadAnagramWords();
+  };
+
+  const handleBackToScenarios = () => {
+    if (onBackToGameSelection) {
+      onBackToGameSelection();
     }
   };
 
-  const handleBackToLevels = () => {
-    setError(null);
-    setGameStarted(false);
-    setGameCompleted(false);
-    setSelectedLevel(null);
-    setAnagramWords(null);
-    setGameResult(null);
-  };
+  // Loading state while fetching words
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px] bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-700">Loading anagram words for {gameData?.name || 'Anagram Game'}...</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Scenario: {scenario.name} | Level: {level} | Topic: {topic}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  // Error state UI (consistent with other game containers)
+  // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-pink-300 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md w-full">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Game</h2>
-          <p className="text-gray-700 mb-6">{error}</p>
-          <div className="space-y-3">
-            <button
-              onClick={() => handleLevelSelect(selectedLevel)}
-              className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+      <div className="max-w-2xl mx-auto p-6 bg-gray-50 min-h-screen">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Unable to Load Anagram Game</h2>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            {error}
+          </div>
+          <div className="text-sm text-gray-600 mb-6">
+            <p><strong>Scenario:</strong> {scenario.name}</p>
+            <p><strong>Level:</strong> {level}</p>
+            <p><strong>Topic:</strong> {topic}</p>
+          </div>
+          <div className="flex justify-center space-x-4">
+            <button 
+              onClick={loadAnagramWords}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Try Again
             </button>
-            <button
-              onClick={handleBackToLevels}
-              className="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+            <button 
+              onClick={handleBackToScenarios}
+              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
-              Back to Levels
+              Back to Scenarios
             </button>
           </div>
         </div>
@@ -144,71 +122,76 @@ const AnagramGameContainer = ({ onBackToGameSelection }) => {
     );
   }
 
-  // Loading state UI (consistent with other game containers)
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-pink-300 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-4xl mb-4">🔤</div>
-          <div className="text-xl font-semibold text-pink-800">
-            Loading anagram words for level {selectedLevel}...
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Game completion screen
-  if (gameCompleted && gameResult) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-pink-300 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md w-full">
-          <h2 className="text-3xl font-bold mb-4 text-pink-600">🎉 Game Complete!</h2>
-          <div className="text-6xl mb-4">{gameResult.success ? '🏆' : '🔤'}</div>
-          <p className="text-xl mb-4">
-            You completed <span className="font-bold text-green-600">{gameResult.completedWords}</span> out of{' '}
-            <span className="font-bold">{gameResult.totalWords}</span> words!
-          </p>
-          <p className="text-lg mb-6">
-            Final Score: <span className="font-bold text-blue-600">{gameResult.score}</span> points
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={handleRestart}
-              className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
-            >
-              Play Again
-            </button>
-            <button
-              onClick={handleBackToLevels}
-              className="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-colors"
-            >
-              Back to Levels
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Game started - render the actual game
+  // Anagram game component
   if (gameStarted && anagramWords) {
     return (
-      <AnagramGame
-        words={anagramWords}
-        level={selectedLevel}
-        onBack={handleBackToLevels}
-        onComplete={handleGameComplete}
-      />
+      <div className="bg-gray-50 min-h-screen">
+        {/* Game Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-6xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  {gameData?.name || 'Anagram Game'}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {scenario.name} | Level: {level} | Topic: {topic}
+                </p>
+              </div>
+              <button
+                onClick={handleBackToScenarios}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Back to Scenarios
+              </button>
+            </div>
+            
+            {/* Game Instructions */}
+            {gameData?.instructions && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Instructions:</strong> {gameData.instructions}
+                </p>
+              </div>
+            )}
+            
+            {/* Game Info */}
+            <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+              <span>Words: {anagramWords.length}</span>
+              {gameData?.timeLimit && <span>Time Limit: {gameData.timeLimit}s</span>}
+              <span>Topic: {topic}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Anagram Game Component */}
+        <AnagramGame
+          words={anagramWords}
+          level={level}
+          onBack={handleBackToScenarios}
+          onComplete={handleTaskCompleted}
+          onRestart={handleRestart}
+          scenario={scenario}
+          gameData={gameData}
+        />
+      </div>
     );
   }
 
-  // Default: Show level selector
+  // Fallback state
   return (
-    <LanguageLevelSelector
-      onLevelSelect={handleLevelSelect}
-      onBackToGameSelection={onBackToGameSelection}
-    />
+    <div className="max-w-2xl mx-auto p-6 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Anagram Game Not Ready</h2>
+        <p className="text-gray-600 mb-6">Something went wrong while setting up the anagram game.</p>
+        <button 
+          onClick={handleBackToScenarios}
+          className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          Back to Scenarios
+        </button>
+      </div>
+    </div>
   );
 };
 

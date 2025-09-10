@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AccommodationSwipeGame from './AccommodationSwipeGame';
 import LanguageLevelSelector from '../LanguageLevelSelector';
+import { fetchAccommodation } from '../../services/api';
 
 const AccommodationSwipeGameContainer = ({ onBackToGameSelection }) => {
   const [selectedLevel, setSelectedLevel] = useState(null);
@@ -136,20 +137,16 @@ const AccommodationSwipeGameContainer = ({ onBackToGameSelection }) => {
     }
   ];
 
-  const handleLevelSelect = async (level) => {
+  const handleAccomodationSelect = async (level) => {
     try {
       setLoading(true);
       setError(null);
       setSelectedLevel(level);
 
       // Try to fetch from your MiniGame API
-      const response = await fetch('https://gamedev-2jld.onrender.com/api/minigames');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = await fetchAccommodation();
+      console.log(data)
+
       
       if (data && data.length > 0) {
         // Format data from backend
@@ -195,7 +192,7 @@ const AccommodationSwipeGameContainer = ({ onBackToGameSelection }) => {
     setGameCompleted(false);
     setGameResult(null);
     if (selectedLevel) {
-      handleLevelSelect(selectedLevel);
+      handleAccomodationSelect(selectedLevel);
     }
   };
 
@@ -281,7 +278,7 @@ const AccommodationSwipeGameContainer = ({ onBackToGameSelection }) => {
           <strong>How to play:</strong> Swipe right to accept listings, left to reject suspected scams.
         </p>
         <button
-          onClick={() => handleLevelSelect('general')}
+          onClick={() => handleAccomodationSelect('general')}
           className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-6 rounded-lg text-xl transition-colors mb-4"
         >
           Start Apartment Hunt

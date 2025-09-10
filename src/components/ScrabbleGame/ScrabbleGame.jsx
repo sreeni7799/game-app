@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const GRID_SIZE = 8;
+const GRID_SIZE = 10;
 
 const GameOverScreen = ({ success, wordsFound, wordsTarget, onRestart, onQuit }) => {
   return (

@@ -1,91 +1,74 @@
 import React, { useState } from 'react';
 import GameSelector from './GameSelector';
 import MemoryGameContainer from './MemoryGame/MemoryGameContainer';
-import ScrabbleGameContainer from './ScrabbleGame/ScrabbleGameContainer'; // Make sure this is imported
+import ScrabbleGameContainer from './ScrabbleGame/ScrabbleGameContainer';
 import AnagramGameContainer from './Anagrams/AnagramContainer';
-import AccommodationSwipeGame from './FindingAccomodationGame/AccommodationSwipeGame';
+import AccommodationSwipeGameContainer from './FindingAccomodationGame/AccommodationSwipeGameContainer';
 import QuizGameContainer from './QuizGame/QuizGameContainer';
 import TabooGameContainer from './TabooGame/TabooGameContainer';
-import AccommodationSwipeGameContainer from './FindingAccomodationGame/AccommodationSwipeGameContainer';
+
 const GameContainer = () => {
-    const [selectedGame, setSelectedGame] = useState(null);
+  const [selectedGame, setSelectedGame] = useState(null);
 
-    const handleGameSelect = (game) => {
-        console.log(`Selected game: ${game.name}`);
-        setSelectedGame(game.id);
+  const handleGameSelect = (gameData) => {
+    console.log('Selected game data:', gameData);
+    setSelectedGame(gameData);
+  };
+
+  const handleBackToGameSelection = () => {
+    setSelectedGame(null);
+  };
+
+  const renderGame = () => {
+    if (!selectedGame) return null;
+
+    const gameType = selectedGame.gameId; // This will now be game.name
+    const commonProps = {
+      onBackToGameSelection: handleBackToGameSelection,
+      level: selectedGame.level,
+      topic: selectedGame.topic,
+      scenario: selectedGame.scenario,
+      gameData: selectedGame.gameDetails
     };
 
-    const handleBackToGameSelection = () => {
-        setSelectedGame(null);
-    };
+    switch (gameType) {
+      case 'memory':
+      case 'memorygame':
+        return <MemoryGameContainer {...commonProps} />;
+      case 'scrabble':
+        return <ScrabbleGameContainer {...commonProps} />;
+      case 'quiz':
+        return <QuizGameContainer {...commonProps} />;
+      case 'taboo':
+        return <TabooGameContainer {...commonProps} />;
+      case 'anagram':
+        return <AnagramGameContainer {...commonProps} />;
+      case 'accomodation':
+        return <AccommodationSwipeGameContainer {...commonProps} />;
+      default:
+        return (
+          <div className="text-center py-8">
+            <p className="text-red-600 mb-4">Game type "{gameType}" not supported</p>
+            <button 
+              onClick={handleBackToGameSelection}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Back to Game Selection
+            </button>
+          </div>
+        );
+    }
+  };
 
-    const renderGame = () => {
-        switch (selectedGame) {
-            case 'memory':
-                return (
-                    <MemoryGameContainer
-                        onBackToGameSelection={handleBackToGameSelection}
-                    />
-                );
-            case 'scrabble':
-                return (
-                    <ScrabbleGameContainer
-                        onBackToGameSelection={handleBackToGameSelection}
-                    />
-                );
-            case 'quiz':
-                return (
-                    // <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                    //     <div className="text-center">
-                    //         <h2 className="text-3xl font-bold mb-4">Quiz Coming Soon!</h2>
-                    //         <button
-                    //             onClick={handleBackToGameSelection}
-                    //             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
-                    //         >
-                    //             Back to Game Selection
-                    //         </button>
-                    //     </div>
-                    // </div>
-                    <QuizGameContainer onBackToGameSelection={handleBackToGameSelection}
-                    />
-                );
-            case 'taboo':
-                return (
-                    // <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                    //     <div className="text-center">
-                    //         <h2 className="text-3xl font-bold mb-4">Taboo Coming Soon!</h2>
-                    //         <button
-                    //             onClick={handleBackToGameSelection}
-                    //             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
-                    //         >
-                    //             Back to Game Selection
-                    //         </button>
-                    //     </div>
-                    // </div>
-                    <TabooGameContainer onBackToGameSelection={handleBackToGameSelection}/>
-                );
-            case 'anagrams':
-                return (
-                    <AnagramGameContainer
-                        onBackToGameSelection={handleBackToGameSelection}
-                    />
-                );
-            case 'accommodation':
-                return (
-                    <AccommodationSwipeGameContainer
-                        onBackToGameSelection={handleBackToGameSelection}
-                    />
-                )
-            default:
-                return <GameSelector onGameSelect={handleGameSelect} />;
-        }
-    };
-
-    return (
-        <div className="App">
-            {renderGame()}
-        </div>
-    );
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {!selectedGame ? (
+        <GameSelector onGameSelect={handleGameSelect} />
+      ) : (
+        renderGame()
+      )}
+    </div>
+  );
 };
 
 export default GameContainer;

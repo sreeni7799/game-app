@@ -44,31 +44,105 @@ process.on('SIGINT', () => {
   });
 });
 
-// Word Schema to match your database structure
+// SCHEMAS
 const wordSchema = new mongoose.Schema({
   germanWordSingular: String,
   englishTranslation: String,
   article: String,
   languageLevel: String,
   image: String,
+  topic: String,
   category: String
-}, { collection: 'words' }); // Assuming your collection is named 'words'
+}, { collection: 'words' });
 
 const Word = mongoose.model('Word', wordSchema);
 
-// Routes
+// Game schema
+const gameSchema = new mongoose.Schema({
+  name: String,
+  displayName: String,
+  description: String,
+  minWords: Number,
+  maxWords: Number,
+  timeLimit: Number,
+  instructions: String,
+  isActive: Boolean,
+  author: mongoose.Schema.Types.ObjectId,
+}, { collection: 'games', timestamps: true });
 
-// Get available language levels
+const Game = mongoose.model('Game', gameSchema);
+
+// Level subdocument schema
+const LevelSchema = new mongoose.Schema({
+  languageLevel: String,
+  selectedGameId: { type: mongoose.Schema.Types.ObjectId, ref: 'Game' },
+  estimatedDuration: Number,
+}, { _id: true });
+
+// Scenario schema with levels array
+const scenarioSchema = new mongoose.Schema({
+  name: String,
+  story: String,
+  topic: String,
+  sequence: Number,
+  isActive: Boolean,
+  estimatedDuration: Number,
+  difficulty: String,
+  author: mongoose.Schema.Types.ObjectId,
+  mapPosition: {
+    x: Number,
+    y: Number
+  },
+  levels: [LevelSchema]
+}, { collection: 'scenarios' });
+
+const Scenario = mongoose.model('Scenario', scenarioSchema);
+
+// MiniGames schema (for accommodation data)
+const miniGamesSchema = new mongoose.Schema({
+  title: String,
+  location: String,
+  price: String,
+  deposit: String, 
+  image: String,
+  description: String,
+  isScam: Boolean,
+  redFlags: Array,
+  greenFlags: Array,
+}, { timestamps: true });
+
+const miniGames = mongoose.model('MiniGames', miniGamesSchema);
+
+// ROUTES
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Server is running' });
+});
+
+// Accommodation routes
+app.get('/api/accommodation', async(req, res) => {
+  try {
+    const accommodationData = await miniGames.find();
+    if (accommodationData.length === 0) {
+      return res.json("");
+    }
+    res.json(accommodationData);
+  } catch (error) {
+    console.error("Error fetching Accommodation info: ", error);
+    res.status(500).json({error: 'Failed to fetch accommodation data'});
+  }
+});
+
+// Word routes
 app.get('/api/words/levels', async (req, res) => {
   try {
     const levels = await Word.distinct('languageLevel');
     
     if (levels.length === 0) {
-      // Return default levels if no data found
       return res.json(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
     }
     
-    // Sort levels in logical order
     const sortedLevels = levels.sort((a, b) => {
       const order = { 'A1': 1, 'A2': 2, 'B1': 3, 'B2': 4, 'C1': 5, 'C2': 6 };
       return (order[a] || 999) - (order[b] || 999);
@@ -81,7 +155,6 @@ app.get('/api/words/levels', async (req, res) => {
   }
 });
 
-// Get words by language level
 app.get('/api/words/level/:level', async (req, res) => {
   try {
     const { level } = req.params;
@@ -89,10 +162,9 @@ app.get('/api/words/level/:level', async (req, res) => {
     
     const words = await Word.find({ 
       languageLevel: level 
-    }).limit(16); // Limit to 16 words for 8 pairs max
+    }).limit(16);
     
     if (words.length === 0) {
-      // Return sample words if no data found for this level
       const sampleWords = getSampleWordsForLevel(level);
       return res.json(sampleWords);
     }
@@ -105,10 +177,39 @@ app.get('/api/words/level/:level', async (req, res) => {
   }
 });
 
-// Legacy endpoint for backward compatibility
+app.get('/api/words/level/:level/topic/:topic', async (req, res) => {
+  try {
+    const { level, topic } = req.params;
+    console.log(`Fetching words for level: ${level} and topic: ${topic}`);
+
+    const words = await Word.find({
+      languageLevel: level,
+      topic: topic  
+    }).limit(20);
+
+    if (words.length === 0) {
+      return res.status(404).json({ 
+        message: `No words found for level ${level} and topic ${topic}`,
+        level: level,
+        topic: topic,
+        count: 0
+      });
+    }
+
+    console.log(`Found ${words.length} words for level ${level} and topic ${topic}`);
+    res.json(words);
+  } catch (error) {
+    console.error('Error fetching words by level and topic:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch words',
+      message: error.message 
+    });
+  }
+});
+
+// Legacy memory pairs endpoint
 app.get('/api/memory-pairs', async (req, res) => {
   try {
-    // Fetch words from any level, prioritizing daily needs categories
     const words = await Word.find({
       $or: [
         { category: { $regex: /daily|needs|basic|everyday/i } },
@@ -117,7 +218,6 @@ app.get('/api/memory-pairs', async (req, res) => {
     }).limit(12);
 
     if (words.length === 0) {
-      // Return sample data if no words found
       return res.json({
         pairs: [
           { de: "das Brot", en: "bread", image: "🍞" },
@@ -130,7 +230,6 @@ app.get('/api/memory-pairs', async (req, res) => {
       });
     }
 
-    // Convert words to pairs format
     const pairs = words.slice(0, 6).map(word => ({
       de: `${word.article} ${word.germanWordSingular}`,
       en: word.englishTranslation,
@@ -147,7 +246,157 @@ app.get('/api/memory-pairs', async (req, res) => {
   }
 });
 
-// Helper function to get sample words for a level when database is empty
+// Topic routes
+app.get('/api/topics/level/:level', async (req, res) => {
+  try {
+    const { level } = req.params;
+    console.log(`Fetching topics for level: ${level}`);
+
+    const topics = await Word.distinct('topic', { languageLevel: level });
+    
+    if (topics.length === 0) {
+      return res.json(['Daily needs', 'Accommodation', 'School', 'Health']);
+    }
+    
+    res.json(topics);
+  } catch (error) {
+    console.error('Error fetching topics:', error);
+    res.status(500).json({ error: 'Failed to fetch topics' });
+  }
+});
+
+app.get('/api/topics', async (req, res) => {
+  try {
+    const topics = await Word.distinct('topic');
+    
+    if (topics.length === 0) {
+      return res.json(['Daily needs', 'Accommodation', 'School', 'Health']);
+    }
+    
+    res.json(topics);
+  } catch (error) {
+    console.error('Error fetching all topics:', error);
+    res.status(500).json({ error: 'Failed to fetch topics' });
+  }
+});
+
+// Scenario routes with game population
+app.get('/api/scenarios/level/:level/topic/:topic', async (req, res) => {
+  try {
+    const { level, topic } = req.params;
+    console.log(`Fetching scenarios for level: ${level} and topic: ${topic}`);
+
+    const scenarios = await Scenario.find({
+      topic: topic,
+      isActive: true
+    })
+    .populate({
+      path: 'levels.selectedGameId',
+      match: { isActive: true },
+      select: 'name displayName description timeLimit minWords maxWords instructions' // Removed gameType and difficulty
+    })
+    .sort({ sequence: 1 });
+
+    // Filter scenarios that have levels matching the requested language level
+    const filteredScenarios = scenarios.filter(scenario => 
+      scenario.levels.some(lvl => lvl.languageLevel === level)
+    );
+
+    if (filteredScenarios.length === 0) {
+      return res.status(404).json({ 
+        message: `No scenarios found for level ${level} and topic ${topic}`,
+        level: level,
+        topic: topic,
+        count: 0
+      });
+    }
+
+    console.log(`Found ${filteredScenarios.length} scenarios for level ${level} and topic ${topic}`);
+    res.json(filteredScenarios);
+  } catch (error) {
+    console.error('Error fetching scenarios by level and topic:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch scenarios',
+      message: error.message 
+    });
+  }
+});
+
+// Get scenario with populated game information
+app.get('/api/scenarios/:id/with-games', async (req, res) => {
+  try {
+    const scenario = await Scenario.findById(req.params.id)
+      .populate({
+        path: 'levels.selectedGameId',
+        select: 'name displayName description timeLimit minWords maxWords instructions', // Removed gameType and difficulty
+        model: 'Game'
+      });
+
+    if (!scenario) {
+      return res.status(404).json({ message: 'Scenario not found' });
+    }
+
+    res.json(scenario);
+  } catch (error) {
+    console.error('Error fetching scenario with games:', error);
+    res.status(500).json({ error: 'Failed to fetch scenario with games' });
+  }
+});
+
+// Get all games for a specific scenario
+app.get('/api/scenarios/:id/games', async (req, res) => {
+  try {
+    const scenario = await Scenario.findById(req.params.id)
+      .populate('levels.selectedGameId');
+
+    if (!scenario) {
+      return res.status(404).json({ message: 'Scenario not found' });
+    }
+
+    const games = scenario.levels
+      .map(level => level.selectedGameId)
+      .filter(game => game !== null);
+
+    res.json(games);
+  } catch (error) {
+    console.error('Error fetching games for scenario:', error);
+    res.status(500).json({ error: 'Failed to fetch games' });
+  }
+});
+
+// Get game details for a specific language level within a scenario
+app.get('/api/scenarios/:scenarioId/level/:level/game', async (req, res) => {
+  try {
+    const { scenarioId, level } = req.params;
+    
+    const scenario = await Scenario.findById(scenarioId)
+      .populate('levels.selectedGameId');
+    
+    if (!scenario) {
+      return res.status(404).json({ message: 'Scenario not found' });
+    }
+    
+    const matchingLevel = scenario.levels.find(l => l.languageLevel === level);
+    
+    if (!matchingLevel) {
+      return res.status(404).json({ 
+        message: `No level ${level} found in this scenario` 
+      });
+    }
+    
+    res.json({
+      level: matchingLevel.languageLevel,
+      estimatedDuration: matchingLevel.estimatedDuration,
+      game: matchingLevel.selectedGameId
+    });
+    
+  } catch (error) {
+    console.error('Error fetching game for level:', error);
+    res.status(500).json({ error: 'Failed to fetch game for level' });
+  }
+});
+
+// HELPER FUNCTIONS
 function getSampleWordsForLevel(level) {
   const sampleData = {
     'A1': [
@@ -171,7 +420,6 @@ function getSampleWordsForLevel(level) {
   return sampleData[level] || sampleData['A1'];
 }
 
-// Helper function to get default emoji based on English word
 function getDefaultEmoji(englishWord) {
   const emojiMap = {
     'water': '💧', 'bread': '🍞', 'milk': '🥛', 'house': '🏠', 'car': '🚗',
@@ -185,18 +433,12 @@ function getDefaultEmoji(englishWord) {
   return emojiMap[englishWord.toLowerCase()] || '📝';
 }
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
-});
-
-// Add error handling middleware
+// ERROR HANDLING
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
   process.exit(1);
@@ -207,12 +449,12 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
+// START SERVER
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
 
-// Handle server errors
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`Port ${PORT} is already in use`);
