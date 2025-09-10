@@ -1,5 +1,47 @@
 import React, { useState, useEffect } from 'react';
 
+const GameOverScreen = ({ score, total, onRestart, onQuit, scenario, level, topic }) => {
+  const percentage = Math.round((score / total) * 100);
+  const passed = percentage >= 70; // 70% passing grade
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+        <div className="text-6xl mb-4">
+          {passed ? '🎉' : '📚'}
+        </div>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+          {passed ? 'Congratulations!' : 'Keep Learning!'}
+        </h2>
+        <p className="text-gray-600 mb-2">
+          You scored {score} out of {total} questions correctly
+        </p>
+        <p className="text-lg font-semibold mb-2 text-blue-600">
+          {percentage}%
+        </p>
+        <p className="text-sm text-gray-500 mb-4">
+          Scenario: {scenario?.name} | Level: {level}
+        </p>
+        
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={onRestart}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={onQuit}
+            className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Back to Scenarios
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const QuizGame = ({ questions, level, onBack, onComplete }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);

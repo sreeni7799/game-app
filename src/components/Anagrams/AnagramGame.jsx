@@ -108,7 +108,7 @@ const AnagramGame = ({ words, level, onBack, onComplete }) => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-purple-800 text-center sm:text-left">
-            Anagram Game - Health Words
+            Anagram Game
           </h1>
           <button
             onClick={onBack}

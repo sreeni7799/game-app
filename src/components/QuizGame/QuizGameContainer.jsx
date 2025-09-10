@@ -86,6 +86,7 @@ const QuizGameContainer = ({ onBackToGameSelection, level, topic, scenario, game
     }
   };
 
+
   // Loading state while fetching questions
   if (loading) {
     return (
@@ -180,9 +181,10 @@ const QuizGameContainer = ({ onBackToGameSelection, level, topic, scenario, game
         {/* Quiz Game Component */}
         <QuizGame
           questions={quizData}
-          onTaskCompleted={handleTaskCompleted}
+          onComplete={handleTaskCompleted}
           onRestart={handleRestart}
           onQuit={handleBackToScenarios}
+          onBack={handleBackToScenarios}
           selectedLevel={level}
           gameData={gameData}
           scenario={scenario}

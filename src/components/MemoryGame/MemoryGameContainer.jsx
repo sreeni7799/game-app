@@ -158,6 +158,7 @@ const MemoryGameContainer = ({ onBackToGameSelection, level, topic, scenario, ga
           onTaskCompleted={handleTaskCompleted}
           onRestart={handleRestart}
           onQuit={handleBackToScenarios}
+          onBackToLevelSelect={handleBackToScenarios}
           selectedLevel={level}
           gameData={gameData}
           scenario={scenario}
