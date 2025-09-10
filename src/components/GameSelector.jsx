@@ -227,11 +227,11 @@ const GameSelector = ({ onGameSelect }) => {
                             </div>
                             
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3 text-xs text-gray-500">
+                              {/* <div className="flex items-center space-x-3 text-xs text-gray-500">
                                 <span>Duration: {level.estimatedDuration}min</span>
                                 {game.timeLimit && <span>Timer: {game.timeLimit}s</span>}
                                 {game.minWords && <span>Words: {game.minWords}-{game.maxWords}</span>}
-                              </div>
+                              </div> */}
                               <button
                                 onClick={() => handleGameSelect(scenario, level, game)}
                                 className="px-3 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
